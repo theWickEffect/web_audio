@@ -23,6 +23,20 @@ let homepage;
 let cunniesPage;
 let blueButton;
 let cunniesText;
+let sidebar;
+const homeButton = document.createElement("button");
+homeButton.textContent = "Return to main";
+homeButton.style.backgroundColor = "yellowgreen";
+const localCunniesButton = document.createElement("button");
+localCunniesButton.textContent = "Get Cunnies";
+const space = document.createElement("p");
+space.textContent = " ";
+const space2 = document.createElement("p");
+space.textContent = " ";
+const title = document.createElement("h1");
+title.textContent = "Cunnies"
+const subtitle = document.createElement("h2");
+subtitle.textContent = "-weather for climbers-";
 
 // let button1;
 // let button2;
@@ -86,17 +100,26 @@ let localAreas;
 let localCunnies; 
 let cunniesArr;
 
-const localCunniesButton = document.getElementById("localCunnies");
+// const localCunniesButton = document.getElementById("localCunnies");
 
-localCunniesButton.onclick = async () =>{
+homeButton.onclick = () =>{
+  document.body.removeChild(sidebar);
+  document.body.removeChild(cunniesPage);
+  GenerateHomePage();
+}
+
+localCunniesButton.onclick = async () => {
   console.log("ok");
   localAreas = getLocalAreas();
-  console.log("localAreas Ok")
+  console.log("localAreas Ok");
   localCunnies = await getLocalCunnies();
   console.log("localCunnies ok");
   buildCunniesArr();
   document.body.removeChild(homepage);
   GenerateCunniesPage();
+  sidebar = document.createElement("div");
+  sidebar.setAttribute("class","sidebar");
+  document.body.appendChild(sidebar);
   buildButtonArr();
   sortByIndex(0);
   buildCunniesText(0);
@@ -107,8 +130,8 @@ localCunniesButton.onclick = async () =>{
 
 // printWeatherforLocalAreas();
 
-fetchWeather2();
-updateWeather();
+// fetchWeather2();
+// updateWeather();
 
 function setUserLoc(uLoc){
     uLoc = uLoc.split(" ").join("");
@@ -177,13 +200,18 @@ function sortByIndex(index){
 }
 
 function buildButtonArr(){
+  title.style.fontSize = "40px";
+  sidebar.appendChild(title);
+  subtitle.style.fontSize = "15px";
+  sidebar.appendChild(subtitle);
+  sidebar.appendChild(space);
   buttonArr = [];
   // if(cunniesArr.length===0) return;
   for(let i = 0;i<cunniesArr[0].cunnies.length;i++){
     let nextButton = document.createElement("button");
     nextButton.setAttribute("group","buttonArr");
     nextButton.textContent = cunniesArr[0].cunnies[i].name;
-    cunniesPage.appendChild(nextButton);
+    sidebar.appendChild(nextButton);
     buttonArr.push(nextButton);
     nextButton.onclick = () =>{
       sortByIndex(i);
@@ -191,6 +219,13 @@ function buildButtonArr(){
       buildCunniesText(i);
     }
   }
+  // const space = document.createElement("p");
+  // space.textContent = " "
+  sidebar.appendChild(space);
+  // homeButton = document.createElement("button");
+  // homeButton.textContent = "Return to Main";
+  sidebar.appendChild(homeButton);
+  sidebar.appendChild(space2);
   blueButton = buttonArr[0];
 }
 
@@ -226,8 +261,8 @@ function printWeatherForLocalAreas(){
 }
 
 function updateLoc(){
-    let locParagraph = document.getElementById("location");
-    locParagraph.textContent = `Location (Lat,Lon): ${userLoc}`;
+    // let locParagraph = document.getElementById("location");
+    // locParagraph.textContent = `Location (Lat,Lon): ${userLoc}`;
     const latlonArr = userLoc.split(",");
     userLat = +latlonArr[0];
     userLon = +latlonArr[1];
@@ -252,10 +287,10 @@ updateLocButton.onclick = () =>{
     setUserLoc(l);
 }
 
-cunniesButton.onclick = () =>{
-    if(change) fetchWeather2();
-    updateWeather();
-}
+// cunniesButton.onclick = () =>{
+//     if(change) fetchWeather2();
+//     updateWeather();
+// }
 
 async function fetchWeather(lat,lon){
   // Replace 'YOUR_API_ENDPOINT' with the actual API endpoint
@@ -345,20 +380,20 @@ async function fetchWeather1() {
       }
   }
  
-function updateWeather(){
-    if(weather1[0]==='E'){
-        weather1p.textContent = weather1;
-        high1p.textContent = high1;
-        precip1p.textContent = "";
-        humid1p.textContent = "";
-    }
-    else{
-        weather1p.textContent = weather1 +":";
-        high1p.textContent = "Temperature: " + high1 + " F";
-        precip1p.textContent = "Chance of Precipitation: " + precip1+"%";
-        humid1p.textContent = "Humidity: " + humid1 + "%";
-    }
-}
+// function updateWeather(){
+//     if(weather1[0]==='E'){
+//         weather1p.textContent = weather1;
+//         high1p.textContent = high1;
+//         precip1p.textContent = "";
+//         humid1p.textContent = "";
+//     }
+//     else{
+//         weather1p.textContent = weather1 +":";
+//         high1p.textContent = "Temperature: " + high1 + " F";
+//         precip1p.textContent = "Chance of Precipitation: " + precip1+"%";
+//         humid1p.textContent = "Humidity: " + humid1 + "%";
+//     }
+// }
 
 function getUserLocation() {
     // Check if the Geolocation API is supported by the browser
@@ -397,18 +432,21 @@ let climbingData;
 function GenerateHomePage(){
   homepage = document.createElement("div");
   homepage.setAttribute("id","home");
+  homepage.setAttribute("class","home");
+  title.style.fontSize = "90px";
+  subtitle.style.fontSize = "40px";
   // const title = document.createElement("h1");
   // title.textContent = "Cunnies"
-  // homepage.appendChild(title);
+  homepage.appendChild(title);
   // const subtitle = document.createElement("h2");
   // subtitle.textContent = "-weather for climbers-";
-  // homepage.appendChild(subtitle);
+  homepage.appendChild(subtitle);
   const logo = document.createElement("img");
-  logo.setAttribute("src","images/climbing-weather1.0.svg");
+  logo.setAttribute("src","images/climbing-weather2.svg");
   logo.setAttribute("alt","crappy logo");
   homepage.appendChild(logo);
   const description = document.createElement("p");
-  description.textContent = "Cunnies.com is the best way to find cunnies online. (besides maybe almost any other weather app...) We do have a couple cool features though.  Put in your optimal conditions, share your location, and see recomendations for climbing areas near you with the best conditions."
+  description.textContent = "Cunnies.lol is the best way to find cunnies online. (besides maybe almost any other weather app...) We do have a couple cool features though.  Put in your optimal conditions, share your location, and see recomendations for climbing areas near you with the best conditions."
   homepage.appendChild(description);
   locText = document.createElement("p");
   locText.textContent = "Location: Default (Seattle-ish)";
@@ -425,10 +463,13 @@ function GenerateHomePage(){
   rangeButton = document.createElement("button");
   rangeButton.textContent = "Change Travel Distance";
   homepage.appendChild(rangeButton);
+  homepage.appendChild(space);
+  homepage.appendChild(localCunniesButton);
   document.body.appendChild(homepage);
 }
 function GenerateCunniesPage(){
   cunniesPage = document.createElement("div");
+  cunniesPage.setAttribute("class","cunnies");
   cunniesPage.setAttribute("id","cunniesPage");
   // timeTitle = document.createElement("t3");
   // timeTitle.textContent = XXXXXXXXXXXXXXXXXXXXXX;
@@ -438,12 +479,22 @@ function GenerateCunniesPage(){
 }
 
 function buildCunniesText(index){
-  blueButton.style.backgroundColor = "yellow";
-  blueButton.style.color = "black";
+  // blueButton.style.backgroundColor = "yellow";
+  // blueButton.style.color = "black";
+  // blueButton.addEventListener("mouseover",()=>{
+  //   blueButton.style.backgroundColor = "black";
+  //   blueButton.style.color = "yellow";
+  // });
+  // blueButton.addEventListener("mouseout",()=>{
+  //   blueButton.style.backgroundColor = "yellow";
+  //   blueButton.style.color = "black";
+  // });
+  blueButton.removeAttribute("style");
   blueButton = buttonArr[index];
   blueButton.style.backgroundColor = "blue";
-  blueButton.style.color = "white";
+  blueButton.style.color = "yellow";
   cunniesText = document.createElement("div");
+  // cunniesText.setAttribute("class","cunnies");
   for(let i = 0;i<cunniesArr.length;i++){
     const areaName = document.createElement("h5");
     areaName.textContent = cunniesArr[i].location;

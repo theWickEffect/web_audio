@@ -1,25 +1,83 @@
 html {
     font-size: 40px; /* px means "pixels": the base font size is now 10 pixels high */
     font-family: 'Orbitron', sans-serif;
+    /* font-family: 'Protest Strike'; */
     /* font-family: "Open Sans", sans-serif; this should be the rest of the output you got from Google Fonts */
-    background-color: rgb(76, 76, 76);
+    background-color: rgb(0, 0, 0);
 }
 
+body{
+    /* position:sticky; */
+    overflow-y:auto;
+    overflow-x:auto;
+    width:auto;
+    margin:0px;
+    /* padding: 0 20px 20px 20px; */
+}
 p,
 li{
-    width:540px;
-    font-size: 24px;
+    max-width:540px;
+    font-size: 13px;
     letter-spacing: 1px;
-    line-height: 2;
+    /* line-height: 2; */
     font-weight: 200;
+    /* text-align: center; */
+    margin-left:24px;
+}
+
+h5{
+    font-family: 'Protest Strike';
+    font-size: 18px;
+    margin-left: 20 px;
+    margin-bottom:0px;
+}
+
+.home{
+    overflow-y:auto;
+    background-color:rgb(155, 239, 235);
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+
+}
+
+.cunnies{
+    background-color:rgb(155, 239, 235);
+    margin-left: 220px;
+    margin-right:20px;
+    margin-top:20px;
+    margin-bottom:20px;
+    /* align-content:space-around; */
+}
+
+.sidebar{
+    height:100%;
+    width:180px;
+    position:fixed;
+    overflow-y: auto;
+    top:0;
+    left:20px;
+    background-color: rgb(64, 21, 105);
+    padding-top: 10px;
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    scroll-behavior: auto;
 }
 
 button{
-    background-color: gold;
-    width:200px;
-    height: 60px;
+    background-color: yellow;
+    width:158px;
+    height: 51px;
     align-items: center;
-    font-size: 60%;
+    font-size: 42%;
+    /* font-size: 60%; */
+}
+
+button:hover{
+    background-color: black;
+    color: yellow;
 }
   
 a:hover{
@@ -27,6 +85,7 @@ a:hover{
 }
 
 h1{
+    font-family: 'Protest Strike';
     font-size: 90px;
     width:540px;
     text-align: center;
@@ -37,19 +96,22 @@ h1{
     font-weight: 700;
 }
 h2{
+    font-family: 'Protest Strike';
     color:rgb(255, 119, 0);
     text-shadow: 2px 2px 1px rgb(0,0, 0);
+    /* margin: -5px; */
     width:540px;
     text-align: center;
     font-size: 40px;
 }
-body{
-    width:540px;
-    margin:0 auto;
-    background-color:rgb(155, 239, 235);
-    padding: 0 20px 20px 20px;
-    border: 20px solid black;
-}
+/* body{ */
+    /* width:auto;
+    margin:0 auto; */
+    /* left: 220px; */
+    /* background-color:rgb(155, 239, 235); */
+    /* padding: 0 20px 20px 20px; */
+    /* border: 20px solid black; */
+/* } */
 img{
     /* max-width:100%;
     max-height: 60vh; */
