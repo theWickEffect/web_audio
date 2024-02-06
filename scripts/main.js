@@ -24,6 +24,7 @@ let cunniesPage;
 let blueButton;
 let cunniesText;
 let sidebar;
+const gridContainer = document.getElementById("container");
 const homeButton = document.createElement("button");
 homeButton.textContent = "Return to main";
 homeButton.style.backgroundColor = "yellowgreen";
@@ -103,8 +104,8 @@ let cunniesArr;
 // const localCunniesButton = document.getElementById("localCunnies");
 
 homeButton.onclick = () =>{
-  document.body.removeChild(sidebar);
-  document.body.removeChild(cunniesPage);
+  gridContainer.removeChild(sidebar);
+  gridContainer.removeChild(cunniesPage);
   GenerateHomePage();
 }
 
@@ -115,11 +116,11 @@ localCunniesButton.onclick = async () => {
   localCunnies = await getLocalCunnies();
   console.log("localCunnies ok");
   buildCunniesArr();
-  document.body.removeChild(homepage);
+  gridContainer.removeChild(homepage);
   GenerateCunniesPage();
   sidebar = document.createElement("div");
   sidebar.setAttribute("class","sidebar");
-  document.body.appendChild(sidebar);
+  gridContainer.appendChild(sidebar);
   buildButtonArr();
   sortByIndex(0);
   buildCunniesText(0);
@@ -204,7 +205,7 @@ function buildButtonArr(){
   sidebar.appendChild(title);
   subtitle.style.fontSize = "15px";
   sidebar.appendChild(subtitle);
-  sidebar.appendChild(space);
+  // sidebar.appendChild(space);
   buttonArr = [];
   // if(cunniesArr.length===0) return;
   for(let i = 0;i<cunniesArr[0].cunnies.length;i++){
@@ -256,7 +257,7 @@ function printWeatherForLocalAreas(){
     areasWeather.appendChild(areaWeather);
   }
   const insertLoc = document.getElementById("localCunniesGoHere");
-  document.body.insertBefore(areasWeather,insertLoc);
+  gridContainer.insertBefore(areasWeather,insertLoc);
   return areasWeather;
 }
 
@@ -465,15 +466,15 @@ function GenerateHomePage(){
   homepage.appendChild(rangeButton);
   homepage.appendChild(space);
   homepage.appendChild(localCunniesButton);
-  document.body.appendChild(homepage);
+  gridContainer.appendChild(homepage);
 }
 function GenerateCunniesPage(){
-  cunniesPage = document.createElement("div");
-  cunniesPage.setAttribute("class","cunnies");
-  cunniesPage.setAttribute("id","cunniesPage");
+  // cunniesPage = document.createElement("div");
+  // cunniesPage.setAttribute("class","cunnies");
+  // cunniesPage.setAttribute("id","cunniesPage");
   // timeTitle = document.createElement("t3");
   // timeTitle.textContent = XXXXXXXXXXXXXXXXXXXXXX;
-  document.body.appendChild(cunniesPage);
+  // gridContainer.appendChild(cunniesPage);
 
   
 }
@@ -494,7 +495,7 @@ function buildCunniesText(index){
   blueButton.style.backgroundColor = "blue";
   blueButton.style.color = "yellow";
   cunniesText = document.createElement("div");
-  // cunniesText.setAttribute("class","cunnies");
+  cunniesText.setAttribute("class","cunnies");
   for(let i = 0;i<cunniesArr.length;i++){
     const areaName = document.createElement("h5");
     areaName.textContent = cunniesArr[i].location;
@@ -513,7 +514,7 @@ function buildCunniesText(index){
     humidity.textContent = `Humidity: ${humid}%`;
     cunniesText.appendChild(humidity);
   }
-  cunniesPage.appendChild(cunniesText);
+  gridContainer.appendChild(cunniesText);
 }
   
 
