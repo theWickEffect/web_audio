@@ -1,13 +1,13 @@
 import {areas} from "./build-areas-data.js"
-let cookies;
+// let cookies;
 let change = false;
 const debug = true;
 
-if(localStorage.getItem("cookies")) cookies = true;
-else{
-    cookies = confirm("This website uses cookies.");
-    if(cookies) localStorage.setItem("cookies","true");
-} 
+// if(localStorage.getItem("cookies")) cookies = true;
+// else{
+//     cookies = confirm("This website uses cookies.");
+//     if(cookies) localStorage.setItem("cookies","true");
+// } 
 
 const latMile = 1/60;
 const lonMile = 1/40;
@@ -86,11 +86,11 @@ let minLat;
 let maxLon;
 let minLon;
 
-if(cookies && localStorage.getItem("range")){
+if(localStorage.getItem("range")){
   range = localStorage.getItem("range");
 }
 
-if(cookies && localStorage.getItem("userLoc")){
+if(localStorage.getItem("userLoc")){
     userLoc = localStorage.getItem("userLoc");
 }
 updateLoc();
@@ -136,13 +136,8 @@ localCunniesButton.onclick = async () => {
 
 function setUserLoc(uLoc){
     uLoc = uLoc.split(" ").join("");
-    if(uLoc!==userLoc){
-        change = true;
-        userLoc = uLoc;
-    }
-    if(cookies){
-        localStorage.setItem("userLoc",userLoc);
-    }
+    userLoc = uLoc;
+    localStorage.setItem("userLoc",userLoc);
     updateLoc();
 }
 
