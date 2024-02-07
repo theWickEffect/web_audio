@@ -31,7 +31,7 @@ let cunniesText;
 let sidebar;
 const gridContainer = document.getElementById("container");
 const homeButton = document.createElement("button");
-homeButton.textContent = "Return to main";
+homeButton.textContent = "Return to Main";
 homeButton.style.backgroundColor = "yellowgreen";
 const localCunniesButton = document.createElement("button");
 localCunniesButton.textContent = "Get Cunnies";
@@ -43,20 +43,6 @@ const title = document.createElement("h1");
 title.textContent = "Cunnies"
 const subtitle = document.createElement("h2");
 subtitle.textContent = "-weather for climbers-";
-
-// let button1;
-// let button2;
-// let button3;
-// let button4;
-// let button5;
-// let button6;
-// let button7;
-// let button8;
-// let button9;
-// let button10;
-// let button11;
-// let button12;
-// let button13;
 let buttonArr;
 
 // function onClickMy(idx) {
@@ -182,6 +168,7 @@ async function getLocalCunnies(){
         if(localStorage.getItem(area)!=="Error"){
           localCunnies[area]=JSON.parse(localStorage.getItem(area));
           found = true;
+          if(debug) console.log("Got "+area+" from local storage.")
         }
       }
     }
