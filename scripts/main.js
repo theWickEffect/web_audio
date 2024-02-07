@@ -216,7 +216,7 @@ function buildButtonArr(){
     buttonArr.push(nextButton);
     nextButton.onclick = () =>{
       sortByIndex(i);
-      cunniesPage.removeChild(cunniesText);
+      gridContainer.removeChild(cunniesText);
       buildCunniesText(i);
     }
   }
