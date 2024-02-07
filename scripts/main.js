@@ -1,3 +1,5 @@
+"use strict";
+
 import {areas} from "./build-areas-data.js"
 // let cookies;
 let change = false;
@@ -8,7 +10,10 @@ const debug = true;
 //     cookies = confirm("This website uses cookies.");
 //     if(cookies) localStorage.setItem("cookies","true");
 // } 
-
+let errorArr=[];
+const maxRetries = 10;
+let retries;
+const refreshHours = 3;
 const latMile = 1/60;
 const lonMile = 1/40;
 const defaultLoc = '47.60621,-122.33207';
@@ -105,7 +110,7 @@ let cunniesArr;
 
 homeButton.onclick = () =>{
   gridContainer.removeChild(sidebar);
-  gridContainer.removeChild(cunniesPage);
+  gridContainer.removeChild(cunniesText);
   GenerateHomePage();
 }
 
@@ -165,23 +170,45 @@ function getLocalAreas(){
 }
 
 async function getLocalCunnies(){
+  retries = 0;
   let localCunnies = {};
+  let curTime = Date.now();
   for(const area of Object.keys(localAreas)){
+    let found = false;
+    if(localStorage.getItem(area)){
+      let areaTime = localStorage.getItem(area+"Time");
+      areaTime = JSON.parse(areaTime);
+      if(curTime<areaTime+(refreshHours*3600000)){
+        if(localStorage.getItem(area)!=="Error"){
+          localCunnies[area]=JSON.parse(localStorage.getItem(area));
+          found = true;
+        }
+      }
+    }
     if(debug) console.log("ok");
-    localCunnies[area]=await fetchWeather(localAreas[area][0],localAreas[area][1]);
-    // setTimeout(()=>{console.log("5 seccond wait")},5000);
+    if(!found){
+      localCunnies[area]=await fetchWeather(localAreas[area][0],localAreas[area][1]);
+      localStorage.setItem(area,JSON.stringify(localCunnies[area]));
+      localStorage.setItem(area+"Time",JSON.stringify(curTime));
+    }
   }
   return localCunnies;
 }
 
 function buildCunniesArr(){
   cunniesArr = [];
+  errorArr = [];
   for(const area of Object.keys(localCunnies)){
-    const areaCunnies = {};
+    if(localCunnies[area]==="Error"){
+      errorArr.Push(area);
+    }
+    else{
+      const areaCunnies = {};
     const c = localCunnies[area].properties.periods;
     areaCunnies["location"] = area;
     areaCunnies["cunnies"] = c;
     cunniesArr.push(areaCunnies);
+    }
   }
 }
 
@@ -225,36 +252,36 @@ function buildButtonArr(){
   blueButton = buttonArr[0];
 }
 
-function printWeatherForLocalAreas(){
-  const areasWeather = document.createElement("div");
-  if(debug) console.log("ok");
-  for(const area of Object.keys(localCunnies)){
-    // let myWeather = await area; 
-    // let valArr = Promise.all([prom1, prom2]);
-    // let [val1, val2] = valArr; 
-    const areaWeather = document.createElement("div");
-    const areaName = document.createElement("h4");
-    areaName.textContent = area;
-    areaWeather.appendChild(areaName);
-    // localCunnies.area = localCunnies.area.properties.periods;
-    for(let i = 0;i<localCunnies[area].properties.periods.length; i++){
-      if(debug) console.log("ok");
-      const areaForecast = localCunnies[area].properties.periods[i];
-      const periodWeather = document.createElement("div");
-      const periodName = document.createElement("h5");
-      periodName.textContent = areaForecast.name;
-      periodWeather.appendChild(periodName);
-      const areaTemp = document.createElement("p");
-      areaTemp.textContent = areaForecast.temperature;
-      periodWeather.appendChild(areaTemp);
-      areaWeather.appendChild(periodWeather);
-    }
-    areasWeather.appendChild(areaWeather);
-  }
-  const insertLoc = document.getElementById("localCunniesGoHere");
-  gridContainer.insertBefore(areasWeather,insertLoc);
-  return areasWeather;
-}
+// function printWeatherForLocalAreas(){
+//   const areasWeather = document.createElement("div");
+//   if(debug) console.log("ok");
+//   for(const area of Object.keys(localCunnies)){
+//     // let myWeather = await area; 
+//     // let valArr = Promise.all([prom1, prom2]);
+//     // let [val1, val2] = valArr; 
+//     const areaWeather = document.createElement("div");
+//     const areaName = document.createElement("h4");
+//     areaName.textContent = area;
+//     areaWeather.appendChild(areaName);
+//     // localCunnies.area = localCunnies.area.properties.periods;
+//     for(let i = 0;i<localCunnies[area].properties.periods.length; i++){
+//       if(debug) console.log("ok");
+//       const areaForecast = localCunnies[area].properties.periods[i];
+//       const periodWeather = document.createElement("div");
+//       const periodName = document.createElement("h5");
+//       periodName.textContent = areaForecast.name;
+//       periodWeather.appendChild(periodName);
+//       const areaTemp = document.createElement("p");
+//       areaTemp.textContent = areaForecast.temperature;
+//       periodWeather.appendChild(areaTemp);
+//       areaWeather.appendChild(periodWeather);
+//     }
+//     areasWeather.appendChild(areaWeather);
+//   }
+//   const insertLoc = document.getElementById("localCunniesGoHere");
+//   gridContainer.insertBefore(areasWeather,insertLoc);
+//   return areasWeather;
+// }
 
 function updateLoc(){
     // let locParagraph = document.getElementById("location");
@@ -289,17 +316,25 @@ updateLocButton.onclick = () =>{
 // }
 
 async function fetchWeather(lat,lon){
-  // Replace 'YOUR_API_ENDPOINT' with the actual API endpoint
   const apiEndpoint = `https://api.weather.gov/points/${lat},${lon}`;
-
   try {
-    const response = await fetch(apiEndpoint);
+    let response = await fetch(apiEndpoint);
+    while(!response.ok && retries<maxRetries){
+      retries++;
+      response = await fetch(apiEndpoint);
+      if(debug) console.log(`Retry: ${retries}`);
+    }
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
     const data = await response.json();
     const endpoint2 = data.properties.forecast;
-    const response2 = await fetch(endpoint2);
+    let response2 = await fetch(endpoint2);
+    while(!response2.ok && retries<maxRetries){
+      retries++;
+      response2 = await fetch(endpoint2);
+      if(debug) console.log(`Retry: ${retries}`);
+    }
     if (!response2.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
@@ -309,72 +344,71 @@ async function fetchWeather(lat,lon){
 
   } catch (error) {
     console.error('Error fetching data:', error);
-      weather1 = "Error Fetching Cunnies"
-      high1 = "Please make sure to enter valid Latitude and Longitude."
+    return "Error";
   }
 }
 
-async function fetchWeather1() {
-    change = false;
-    // Replace 'YOUR_API_ENDPOINT' with the actual API endpoint
-    const apiEndpoint = 'https://api.weather.gov/points/'+userLoc;
+// async function fetchWeather1() {
+//     change = false;
+//     // Replace 'YOUR_API_ENDPOINT' with the actual API endpoint
+//     const apiEndpoint = 'https://api.weather.gov/points/'+userLoc;
   
-    try {
-      // Make a GET request using await
-      const response = await fetch(apiEndpoint);
+//     try {
+//       // Make a GET request using await
+//       const response = await fetch(apiEndpoint);
   
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
+//       if (!response.ok) {
+//         throw new Error(`HTTP error! Status: ${response.status}`);
+//       }
   
-      // Parse the JSON response
-      const data = await response.json();
-    //   const weatherData = JSON.parse(data);
-      const forecast = data.properties.forecast;
-       console.dir(forecast);
+//       // Parse the JSON response
+//       const data = await response.json();
+//     //   const weatherData = JSON.parse(data);
+//       const forecast = data.properties.forecast;
+//        console.dir(forecast);
       
-      return forecast;
-    //   weather1 = forecast["properties"]["periods"][0]["name"];
-    //     high1 = forecast["properties"]["periods"][0]["temperature"];
-    //     low1 = forecast["properties"]["periods"][0]["name"];
-    //     precip1 = forecast["properties"]["periods"][0]["probabilityOfPrecipitation"]["value"];
-    //     humid1 = forecast["properties"]["periods"][0]["relativeHumidity"]["value"];
+//       return forecast;
+//     //   weather1 = forecast["properties"]["periods"][0]["name"];
+//     //     high1 = forecast["properties"]["periods"][0]["temperature"];
+//     //     low1 = forecast["properties"]["periods"][0]["name"];
+//     //     precip1 = forecast["properties"]["periods"][0]["probabilityOfPrecipitation"]["value"];
+//     //     humid1 = forecast["properties"]["periods"][0]["relativeHumidity"]["value"];
   
      
-    } catch (error) {
-      console.error('Error fetching data:', error);
-        weather1 = "Error Fetching Cunnies"
-        high1 = "Please make sure to enter valid Latitude and Longitude."
-    }
-  }
+//     } catch (error) {
+//       console.error('Error fetching data:', error);
+//         weather1 = "Error Fetching Cunnies"
+//         high1 = "Please make sure to enter valid Latitude and Longitude."
+//     }
+//   }
 
-  async function fetchWeather2(){
-    let endpoint2 = await fetchWeather1();
-    try {
-        // Make a GET request using await
-        const response = await fetch(endpoint2);
+//   async function fetchWeather2(){
+//     let endpoint2 = await fetchWeather1();
+//     try {
+//         // Make a GET request using await
+//         const response = await fetch(endpoint2);
     
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+//         if (!response.ok) {
+//           throw new Error(`HTTP error! Status: ${response.status}`);
+//         }
     
-        // Parse the JSON response
-        const forecast = await response.json();
-        // const forecast = JSON.parse(data);`
-        weather1 = forecast.properties.periods[0].name;
-          high1 = forecast.properties.periods[0].temperature;
-          low1 = forecast.properties.periods[0].name;
-          precip1 = forecast.properties.periods[0].probabilityOfPrecipitation.value;
-          humid1 = forecast.properties.periods[0].relativeHumidity.value;
-          if(precip1===null) precip1 = 0;
-          if(humid1===null) humid1 = 0;
-        console.dir(forecast);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-          weather1 = "Error Fetching Cunnies"
-          high1 = "Please make sure to enter valid Latitude and Longitude."
-      }
-  }
+//         // Parse the JSON response
+//         const forecast = await response.json();
+//         // const forecast = JSON.parse(data);`
+//         weather1 = forecast.properties.periods[0].name;
+//           high1 = forecast.properties.periods[0].temperature;
+//           low1 = forecast.properties.periods[0].name;
+//           precip1 = forecast.properties.periods[0].probabilityOfPrecipitation.value;
+//           humid1 = forecast.properties.periods[0].relativeHumidity.value;
+//           if(precip1===null) precip1 = 0;
+//           if(humid1===null) humid1 = 0;
+//         console.dir(forecast);
+//       } catch (error) {
+//         console.error('Error fetching data:', error);
+//           weather1 = "Error Fetching Cunnies"
+//           high1 = "Please make sure to enter valid Latitude and Longitude."
+//       }
+//   }
  
 // function updateWeather(){
 //     if(weather1[0]==='E'){
