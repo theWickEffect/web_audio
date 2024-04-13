@@ -1,12 +1,14 @@
 console.clear();
+
 const gridContainer = document.getElementById("container");
-let homepage;
+let homepage: HTMLDivElement;
 const logo = document.createElement("img");
-logo.setAttribute("src", "images/web-audio2.svg");
-logo.setAttribute("alt", "crappy logo");
+    logo.setAttribute("src","images/web-audio2.svg");
+    logo.setAttribute("alt","crappy logo");
+
 // let fileButton: HTMLButtonElement;
 let fileButton = document.createElement("button");
-fileButton.textContent = "Enter File";
+fileButton.textContent = "Enter File"
 let playButton = document.createElement("button");
 playButton.textContent = "Play";
 playButton.dataset.play = "false";
@@ -18,91 +20,106 @@ let loop = false;
 let distortionButton = document.createElement("button");
 distortionButton.textContent = "Distortion";
 let distortionOn = false;
-let fileText;
+let fileText: HTMLParagraphElement;
 let audioFile = document.getElementById("audioFile");
 let gainNode;
 let panNode;
 let distortionNode;
 let reverbNode;
 let delayNode;
+
 GenerateHomePage();
-fileButton.onclick = () => {
-    const fileName = prompt("Enter the name of a valid audio file. (eg: test.mp3)");
+
+fileButton.onclick = () =>{
+    const fileName = prompt("Enter the name of a valid audio file. (eg: test.mp3)")
     // audioFile = "audio-files/"+fileName;
     // if(audioFile)
-};
+}
+
 let audioCtx;
+
 let track;
+
 let audioElement = document.querySelector("audio");
+
 // const audioElement = document.getElementById('audioFile') as HTMLMediaElement; // Assuming you have an audio element with the id "myAudio"
 // const audioCtx = new AudioContext();
 // const source = audioCtx.createMediaElementSource(audioElement);
-stopButton.onclick = () => {
-};
-loopButton.onclick = () => {
-    if (loop) {
+
+stopButton.onclick = () =>{
+
+}
+
+loopButton.onclick = () =>{
+    if(loop){
         loop = false;
         loopButton.textContent = "Loop";
     }
-    else {
+    else{
         loop = true;
         loopButton.textContent = "Stop Loop";
     }
-};
-playButton.onclick = () => {
-    if (!audioCtx) {
+}
+
+playButton.onclick = () =>{
+    if(!audioCtx){
         init();
     }
-    if (audioCtx.state === "suspended") {
+    if(audioCtx.state === "suspended"){
         audioCtx.resume();
     }
-    if (playButton.dataset.play === "false") {
+    if(playButton.dataset.play === "false"){
         play();
         // else throw "no audioElement";
     }
-    else {
-        if (audioElement !== null) {
+    else{
+        if(audioElement !== null){
             audioElement.pause();
             playButton.dataset.play = "false";
             playButton.textContent = "Play";
         }
-        else
-            throw "no audioElement";
+        else throw "no audioElement";
     }
-};
-distortionButton.onclick = () => {
-    if (!audioCtx)
-        init();
-    if (distortionOn) {
-        distortionOn = false;
+}
+
+distortionButton.onclick =()=>{
+    if(!audioCtx) init();
+    if(distortionOn){
+        distortionOn=false;
         distortionNode.disconnect(audioCtx.destination);
         panNode.disconnect(distortionNode);
         panNode.connect(audioCtx.destination);
-    }
-    else {
+    } 
+    else{
         distortionOn = true;
         panNode.disconnect(audioCtx.destination);
         panNode.connect(distortionNode).connect(audioCtx.destination);
-    }
-};
-// handles end of track and looping functionality
-if (audioElement !== null) {
-    audioElement.addEventListener("ended", () => {
-        if (loop)
-            play();
-        else {
-            playButton.dataset.play = "false";
-            playButton.textContent = "Play";
-        }
-    }, false);
+    } 
 }
-function play() {
-    if (audioElement !== null) {
+
+// handles end of track and looping functionality
+if(audioElement !== null){
+    audioElement.addEventListener(
+        "ended",
+        () => {
+            if(loop) play();
+            else{
+                playButton.dataset.play = "false";
+                playButton.textContent = "Play";
+            }
+        },
+        false,
+    );
+}
+
+function play(){
+    if(audioElement !== null){
         audioElement.play();
         playButton.dataset.play = "true";
         playButton.textContent = "Pause";
     }
 }
+
 function init() {
     const AudioContext = window.AudioContext;
     audioCtx = new AudioContext();
@@ -112,23 +129,35 @@ function init() {
     distortionNode = audioCtx.createWaveShaper();
     distortionNode.curve = makeDistortionCurve(400);
     reverbNode = createReverb(audioCtx);
+
     track.connect(gainNode).connect(panNode).connect(audioCtx.destination);
     // panNode
+
 }
+
 function makeDistortionCurve(amount) {
-    let k = typeof amount === "number" ? amount : 50, n_samples = 44100, curve = new Float32Array(n_samples), deg = Math.PI / 180, i = 0, x;
+    let k = typeof amount === "number" ? amount : 50,
+      n_samples = 44100,
+      curve = new Float32Array(n_samples),
+      deg = Math.PI / 180,
+      i = 0,
+      x;
     for (; i < n_samples; ++i) {
-        x = (i * 2) / n_samples - 1;
-        curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+      x = (i * 2) / n_samples - 1;
+      curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
     }
     return curve;
 }
+
+
+
 function createReverb(audioCtx) {
     const delay1 = audioCtx.createDelay(1);
     const dryNode = audioCtx.createGain();
     const wetNode = audioCtx.createGain();
     const mixer = audioCtx.createGain();
     const filter = audioCtx.createBiquadFilter();
+
     delay1.delayTime.value = 0.75;
     dryNode.gain.value = 1;
     wetNode.gain.value = 0;
@@ -136,33 +165,37 @@ function createReverb(audioCtx) {
     filter.type = "highpass";
     return {
         apply() {
-            wetNode.gain.setValueAtTime(0.75, audioCtx.currentTime);
+          wetNode.gain.setValueAtTime(0.75, audioCtx.currentTime);
         },
         discard() {
-            wetNode.gain.setValueAtTime(0, audioCtx.currentTime);
+          wetNode.gain.setValueAtTime(0, audioCtx.currentTime);
         },
         isApplied() {
-            return wetNode.gain.value > 0;
+          return wetNode.gain.value > 0;
         },
         placeBetween(inputNode, outputNode) {
-            inputNode.connect(delay1);
-            delay1.connect(wetNode);
-            wetNode.connect(filter);
-            filter.connect(delay1);
-            inputNode.connect(dryNode);
-            dryNode.connect(mixer);
-            wetNode.connect(mixer);
-            mixer.connect(outputNode);
+          inputNode.connect(delay1);
+          delay1.connect(wetNode);
+          wetNode.connect(filter);
+          filter.connect(delay1);
+  
+          inputNode.connect(dryNode);
+          dryNode.connect(mixer);
+          wetNode.connect(mixer);
+          mixer.connect(outputNode);
         },
-    };
+      };
 }
+
 // function init() {
 //     audioCtx = new AudioContext();
 //     track = new MediaElementAudioSourceNode(audioCtx, {
 //       mediaElement: audioElement,
 //     });
+
 //     // Create the node that controls the volume.
 //     const gainNode = new GainNode(audioCtx);
+
 //     const volumeControl = document.querySelector('[data-action="volume"]');
 //     volumeControl.addEventListener(
 //       "input",
@@ -171,8 +204,10 @@ function createReverb(audioCtx) {
 //       },
 //       false
 //     );
+
 //     // Create the node that controls the panning
 //     const panner = new StereoPannerNode(audioCtx, { pan: 0 });
+
 //     const pannerControl = document.querySelector('[data-action="panner"]');
 //     pannerControl.addEventListener(
 //       "input",
@@ -181,10 +216,13 @@ function createReverb(audioCtx) {
 //       },
 //       false
 //     );
-function GenerateHomePage() {
+
+
+
+function GenerateHomePage(){
     homepage = document.createElement("div");
-    homepage.setAttribute("id", "home");
-    homepage.setAttribute("class", "home");
+    homepage.setAttribute("id","home");
+    homepage.setAttribute("class","home");
     // title.style.fontSize = "90px";
     // subtitle.style.fontSize = "40px";
     // const title = document.createElement("h1");
@@ -200,9 +238,9 @@ function GenerateHomePage() {
     // const description = document.createElement("p");
     // description.textContent = "Cunnies.lol is the best way to find cunnies online. (besides maybe almost any other weather app...) We do have a couple cool features though.  Put in your optimal conditions, share your location, and see recomendations for climbing areas near you with the best conditions."
     let masterDiv = document.createElement("div");
-    masterDiv.setAttribute("class", "master");
+    masterDiv.setAttribute("class","master");
     let distortionDiv = document.createElement("div");
-    distortionDiv.setAttribute("class", "distortion");
+    distortionDiv.setAttribute("class","distortion");
     let masterText = document.createElement("h3");
     masterText.textContent = "Master";
     masterDiv.appendChild(masterText);
@@ -210,7 +248,7 @@ function GenerateHomePage() {
     distortionText.textContent = "Distortion";
     distortionDiv.appendChild(distortionText);
     fileText = document.createElement("p");
-    fileText.textContent = "No file selected.";
+    fileText.textContent = "No file selected."
     homepage.appendChild(fileText);
     // fileButton = document.createElement("button");
     // fileButton.textContent = "Enter File"
@@ -242,12 +280,16 @@ function GenerateHomePage() {
     masterDiv.appendChild(panText);
     masterDiv.appendChild(panFader);
     // homepage.appendChild(masterDiv);
-    volFader.addEventListener("input", () => {
+
+    volFader.addEventListener("input",()=>{
         gainNode.gain.value = volFader.value;
-    }, false);
-    panFader.addEventListener("input", () => {
+    },false);
+    panFader.addEventListener("input",()=>{
         panNode.pan.value = panFader.value;
-    }, false);
+    },false);
+    
+
+    
     // homepage.appendChild(description);
     // locText = document.createElement("p");
     // locText.textContent = "Location: Default (Seattle-ish)";
@@ -266,10 +308,9 @@ function GenerateHomePage() {
     // homepage.appendChild(rangeButton);
     // homepage.appendChild(space);
     // homepage.appendChild(localCunniesButton);
-    if (gridContainer !== null) {
+    if(gridContainer !== null){
         gridContainer.appendChild(homepage);
         gridContainer.appendChild(masterDiv);
         gridContainer.appendChild(distortionDiv);
     }
-}
-//# sourceMappingURL=main.js.map
+  }
