@@ -55,6 +55,11 @@ h2{
     grid-row: 3,4;
     border: 3px,white;
 }
+.record{
+    grid-column: 2,3;
+    grid-row: 3,4;
+    border: 3px,white;
+}
 /* p,
 li{
     max-width:540px;

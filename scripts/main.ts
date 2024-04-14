@@ -7,6 +7,9 @@ const logo = document.createElement("img");
     logo.setAttribute("alt","crappy logo");
 
 // let fileButton: HTMLButtonElement;
+
+const recorder = document.createElement("div");
+recorder.setAttribute("class","recorder");
 let fileButton = document.createElement("button");
 fileButton.textContent = "Enter File"
 let playButton = document.createElement("button");
@@ -28,7 +31,115 @@ let distortionNode;
 let reverbNode;
 let delayNode;
 
+let clips = [];
+let soundClips = document.createElement("section");
+let clipCount = 0;
+let recordButton = document.createElement("button");
+recordButton.textContent = "Record";
+let stopRecord = false;
+// let stopRecordButton = document.createElement("button");
+// recordButton.textContent = "Stop";
+
+
+
+
+
+
+
 GenerateHomePage();
+
+// function DisplayClips(){
+    
+// }
+
+//structure for getting user media:
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    console.log("getUserMedia supported.");
+    navigator.mediaDevices
+      .getUserMedia(
+        // constraints - only audio needed for this app
+        {
+          audio: true,
+        },
+      )
+  
+      // Success callback
+      .then((stream: MediaStream) => {
+
+
+
+
+
+      })
+  
+      // Error callback
+      .catch((err) => {
+        console.error(`The following getUserMedia error occurred: ${err}`);
+      });
+  } else {
+    console.log("getUserMedia not supported on your browser!");
+  }
+  
+
+function processStream(stream:MediaStream){
+    const mediaRecorder = new MediaRecorder(stream);
+    let chunks = [];
+    recordButton.onclick = () =>{
+        if(stopRecord){
+            mediaRecorder.stop;
+            stopRecord = false;
+            recordButton.style.background = "white";
+            recordButton.textContent = "Record";
+            recordButton.style.color = "red";
+        }
+        else{
+            mediaRecorder.start;
+            stopRecord = true;
+            recordButton.style.background = "red";
+            recordButton.style.color = "white";
+            recordButton.textContent = "Stop";
+        }
+    }
+    mediaRecorder.onstop = (e) =>{
+        clipCount++;
+        const clipName = `Clip ${clipCount}`;
+        const clipContainer = document.createElement("article");
+        const clipLabel = document.createElement("p");
+        const audio = document.createElement("audio");
+        const deleteButton = document.createElement("button");
+
+        clipContainer.classList.add("clip");
+        audio.setAttribute("controls", "");
+        deleteButton.textContent = "Delete";
+        deleteButton.className = "delete";
+        clipLabel.textContent = clipName;
+
+        clipContainer.appendChild(audio);
+        clipContainer.appendChild(clipLabel);
+        clipContainer.appendChild(deleteButton);
+        soundClips.appendChild(clipContainer);
+
+        audio.controls = true;
+        const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+        chunks = [];
+        const audioURL = window.URL.createObjectURL(blob);
+        audio.src = audioURL;
+        console.log("recorder stopped");
+
+        // deleteButton.onclick = function (e) {
+        //     e.target.closest(".clip").remove();
+        // };
+
+    }
+}
+
+function buildRecorder(){
+    recorder.appendChild(recordButton);
+    const clipText = document.createElement("h4");
+    clipText.textContent = "Clips:";
+    recorder.appendChild(clipText);
+    recorder.appendChild(soundClips);
+}
 
 fileButton.onclick = () =>{
     const fileName = prompt("Enter the name of a valid audio file. (eg: test.mp3)")
