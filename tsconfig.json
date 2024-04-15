@@ -8,6 +8,7 @@
         "strictFunctionTypes": true,
         "sourceMap": true,
         "noEmitOnError": true,
+        "strict": true
         // "lib": ["dom", "ESNext"]
     },
     "exclude": [
