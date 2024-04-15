@@ -17,6 +17,7 @@ interface AppView{
 
 }
 
+
 const view = createView();
 
 function createView():AppView {
@@ -82,6 +83,7 @@ interface AppModel{
     urlArr: string[];
     clipCount: number;
     stopRecord: boolean;
+    distAmt: number;
     // reverbNode;
     // delayNode;
     // clips:HTMLAudioElement[];
@@ -100,6 +102,7 @@ const model:AppModel ={
     urlArr: [],
     clipCount: 0,
     stopRecord: false,
+    distAmt: 400,
     // clips: [],
     // reverbNode: null,
     // delayNode: null,
@@ -304,7 +307,7 @@ function mainControll(){
     }
 
 
-    let distAmt = 400
+    // let distAmt = 400
 
     //file button now allows user to set the amount of distortion
     //this functionality should be moved to a fader in the fx div
@@ -312,7 +315,7 @@ function mainControll(){
         let dcInt = 0;
         const dc = prompt("enter dist curve");
         if(dc!== null) dcInt = parseInt(dc);
-        distAmt = dcInt;
+        model.distAmt = dcInt;
         if(model.distortionNode) model.distortionNode.curve = makeDistortionCurve(dcInt);
 
         // const fileName = prompt("Enter the name of a valid audio file. (eg: test.mp3)")
@@ -404,7 +407,7 @@ function mainControll(){
             model.gainNode = model.audioCtx.createGain();
             model.panNode = new StereoPannerNode(model.audioCtx);
             model.distortionNode = model.audioCtx.createWaveShaper();
-            if(model.distortionNode)model.distortionNode.curve = makeDistortionCurve(distAmt);
+            if(model.distortionNode)model.distortionNode.curve = makeDistortionCurve(model.distAmt);
             setUpFaders();
             // reverb not working:
             // reverbNode = createReverb(audioCtx);
