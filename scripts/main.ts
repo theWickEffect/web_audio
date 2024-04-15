@@ -1,13 +1,29 @@
 console.clear();
 
-const gridContainer = document.getElementById("container");
+interface AppView{
+    gridContainer: HTMLElement
+
+}
+const view:AppView = {
+    gridContainer: document.getElementById("container")!
+}
+
+interface AppModel{
+    revLoc: number;
+}
+
+const model:AppModel ={
+    revLoc: -1
+}
+
+
+
 let homepage: HTMLDivElement;
 const logo = document.createElement("img");
     logo.setAttribute("src","images/web-audio2.svg");
     logo.setAttribute("alt","crappy logo");
 
 // let fileButton: HTMLButtonElement;
-let revLoc = -1;
 let reverseOn = false;
 const reverseButton = document.createElement("button");
 reverseButton.textContent = "Reverse";
@@ -159,7 +175,7 @@ function processStream(stream:MediaStream){
         clips.push(audio);
         revArr.push(revAudio);
         selectButton.onclick = () =>{
-            revLoc = clipCount-1;
+            model.revLoc = clipCount-1;
             if(selectOK){
                 selectOK = false;
                 audioElement = revAudio;
@@ -234,7 +250,7 @@ function mainControll(){
     //takes a url to an audio file and returns a promise to an AudioBuffer;
     function rev(): Promise<AudioBuffer>{
         const ctx = new AudioContext;
-        return fetch(urlArr[revLoc])
+        return fetch(urlArr[model.revLoc])
             .then(data => data.arrayBuffer())
             .then(arrayBuffer => ctx.decodeAudioData(arrayBuffer))
             .then(revAudioBuffer=> reverseBuff(revAudioBuffer));
@@ -472,10 +488,10 @@ function GenerateHomePage(){
         panNode.pan.value = panFader.value;
     },false);
 
-    if(gridContainer !== null){
-        gridContainer.appendChild(homepage);
-        gridContainer.appendChild(masterDiv);
-        gridContainer.appendChild(distortionDiv);
-        gridContainer.appendChild(recorder)
+    if(view.gridContainer !== null){
+        view.gridContainer.appendChild(homepage);
+        view.gridContainer.appendChild(masterDiv);
+        view.gridContainer.appendChild(distortionDiv);
+        view.gridContainer.appendChild(recorder)
     }
   }
