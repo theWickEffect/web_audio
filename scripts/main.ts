@@ -182,27 +182,11 @@ function buildRecorder(){
     recorder.appendChild(clipText);
     recorder.appendChild(soundClips);
 }
-// let distCurve = 400
-// fileButton.onclick = () =>{
-//     let dcInt = 0;
-//     const dc = prompt("enter dist curve");
-//     if(dc!== null) dcInt = parseInt(dc);
-//     distortionNode.curve = makeDistortionCurve(dcInt);
 
-//     // const fileName = prompt("Enter the name of a valid audio file. (eg: test.mp3)")
-//     // audioFile = "audio-files/"+fileName;
-//     // if(audioFile)
+
+// stopButton.onclick = () =>{
+
 // }
-
-
-
-// const audioElement = document.getElementById('audioFile') as HTMLMediaElement; // Assuming you have an audio element with the id "myAudio"
-// const audioCtx = new AudioContext();
-// const source = audioCtx.createMediaElementSource(audioElement);
-
-stopButton.onclick = () =>{
-
-}
 
 mainControll();
 
@@ -213,15 +197,7 @@ function mainControll(){
     init();
 
     reverseButton.onclick = async() => {
-        // if(isRev){
-        //     audioElement = clips[revLoc];
-        //     isRev = false;
-        // }
-        // else if(revLoc!==-1){
-        //     audioElement = revArr[revLoc];
-        //     isRev = true;
-        //     console.log("reverse");
-        // }
+        
         const aBuff = await rev();
         audioElement = await bufferToAudioElement(aBuff);
         async function bufferToAudioElement(audioBuffer: AudioBuffer): Promise<HTMLAudioElement> {
@@ -251,32 +227,17 @@ function mainControll(){
             return audioElement;
         }
         
-        // // Usage example
-        // const audioBuffer: AudioBuffer = /* Your audio buffer */;
-        // bufferToAudioElement(audioBuffer).then(audioElement => {
-        //     // Use the audio element as needed
-        //     document.body.appendChild(audioElement); // Append the audio element to the document body
-        // }).catch(error => {
-        //     console.error('Error:', error);
-        // });
         
         init();
     }
 
+    //takes a url to an audio file and returns a promise to an AudioBuffer;
     function rev(): Promise<AudioBuffer>{
         const ctx = new AudioContext;
-        // let revAudio:AudioBuffer;
-        // if (revLoc === -1){
-        //     console.log("sorry, my bad");
-        //     return;
-        // }
         return fetch(urlArr[revLoc])
             .then(data => data.arrayBuffer())
             .then(arrayBuffer => ctx.decodeAudioData(arrayBuffer))
             .then(revAudioBuffer=> reverseBuff(revAudioBuffer));
-            // .then(decodedAudio => {
-            //     revAudio = decodedAudio;
-        // return revAudio;
     }
 
     function reverseBuff(Buff:AudioBuffer):AudioBuffer{
@@ -294,67 +255,16 @@ function mainControll(){
         return Buff;
     }
 
-    // reverseButton.onclick = async() => {
-    //     if(audioElement!==null){
-    //         const audioContext = new (window.AudioContext)();
-    //         const arrBuff = await audioElementToArrayBuffer(audioElement);
-    //         const audioBuff = await decodeAudioData(arrayBuffer);
 
-    //         audioElement = reverseMediaElement(audioElement);
-    //     }
-    // }
+    let distAmt = 400
 
-    // function audioElementToArrayBuffer(mediaElement: HTMLMediaElement): Promise<ArrayBuffer> {
-    //     return new Promise((resolve, reject) => {
-    //         // Create a new XMLHttpRequest
-    //         const xhr = new XMLHttpRequest();
-    
-    //         // Set up the request to the audio file URL
-    //         xhr.open('GET', mediaElement.src, true);
-    //         xhr.responseType = 'blob';
-    
-    //         // On successful load, read the Blob as an ArrayBuffer
-    //         xhr.onload = () => {
-    //             if (xhr.status === 200) {
-    //                 const blob = xhr.response;
-    //                 const fileReader = new FileReader();
-    
-    //                 // On successful read, resolve with the ArrayBuffer
-    //                 fileReader.onload = () => {
-    //                     if (fileReader.result instanceof ArrayBuffer) {
-    //                         resolve(fileReader.result);
-    //                     } else {
-    //                         reject(new Error('Failed to read audio file as ArrayBuffer'));
-    //                     }
-    //                 };
-    
-    //                 // Read the Blob as an ArrayBuffer
-    //                 fileReader.readAsArrayBuffer(blob);
-    //             } else {
-    //                 reject(new Error('Failed to load audio file'));
-    //             }
-    //         };
-    
-    //         // On error, reject with the error message
-    //         xhr.onerror = () => {
-    //             reject(new Error('Failed to load audio file'));
-    //         };
-    
-    //         // Send the request
-    //         xhr.send();
-    //     });
-    // }
-    // // function revMediaElement(mediaElement:HTMLMediaElement): HTMLMediaElement{
-    // //     const audioContext = new (window.AudioContext)();
-    // //     const source = audioContext.createMediaElementSource(mediaElement)
-    // // }
-
-
-    let distCurve = 400
+    //file button now allows user to set the amount of distortion
+    //this functionality should be moved to a fader in the fx div
     fileButton.onclick = () =>{
         let dcInt = 0;
         const dc = prompt("enter dist curve");
         if(dc!== null) dcInt = parseInt(dc);
+        distAmt = dcInt;
         distortionNode.curve = makeDistortionCurve(dcInt);
 
         // const fileName = prompt("Enter the name of a valid audio file. (eg: test.mp3)")
@@ -440,11 +350,12 @@ function mainControll(){
         gainNode = audioCtx.createGain();
         panNode = new StereoPannerNode(audioCtx);
         distortionNode = audioCtx.createWaveShaper();
-        distortionNode.curve = makeDistortionCurve(400);
-        reverbNode = createReverb(audioCtx);
+        distortionNode.curve = makeDistortionCurve(distAmt);
+        // reverb not working:
+        // reverbNode = createReverb(audioCtx);
 
+        //sets up initial audio graph
         track.connect(gainNode).connect(panNode).connect(audioCtx.destination);
-        // panNode
 
     }
 
@@ -463,72 +374,44 @@ function mainControll(){
     }
 
 
+// reverb not working
+    // function createReverb(audioCtx) {
+    //     const delay1 = audioCtx.createDelay(1);
+    //     const dryNode = audioCtx.createGain();
+    //     const wetNode = audioCtx.createGain();
+    //     const mixer = audioCtx.createGain();
+    //     const filter = audioCtx.createBiquadFilter();
 
-    function createReverb(audioCtx) {
-        const delay1 = audioCtx.createDelay(1);
-        const dryNode = audioCtx.createGain();
-        const wetNode = audioCtx.createGain();
-        const mixer = audioCtx.createGain();
-        const filter = audioCtx.createBiquadFilter();
-
-        delay1.delayTime.value = 0.75;
-        dryNode.gain.value = 1;
-        wetNode.gain.value = 0;
-        filter.frequency.value = 1100;
-        filter.type = "highpass";
-        return {
-            apply() {
-            wetNode.gain.setValueAtTime(0.75, audioCtx.currentTime);
-            },
-            discard() {
-            wetNode.gain.setValueAtTime(0, audioCtx.currentTime);
-            },
-            isApplied() {
-            return wetNode.gain.value > 0;
-            },
-            placeBetween(inputNode, outputNode) {
-            inputNode.connect(delay1);
-            delay1.connect(wetNode);
-            wetNode.connect(filter);
-            filter.connect(delay1);
+    //     delay1.delayTime.value = 0.75;
+    //     dryNode.gain.value = 1;
+    //     wetNode.gain.value = 0;
+    //     filter.frequency.value = 1100;
+    //     filter.type = "highpass";
+    //     return {
+    //         apply() {
+    //         wetNode.gain.setValueAtTime(0.75, audioCtx.currentTime);
+    //         },
+    //         discard() {
+    //         wetNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    //         },
+    //         isApplied() {
+    //         return wetNode.gain.value > 0;
+    //         },
+    //         placeBetween(inputNode, outputNode) {
+    //         inputNode.connect(delay1);
+    //         delay1.connect(wetNode);
+    //         wetNode.connect(filter);
+    //         filter.connect(delay1);
     
-            inputNode.connect(dryNode);
-            dryNode.connect(mixer);
-            wetNode.connect(mixer);
-            mixer.connect(outputNode);
-            },
-        };
-    }
+    //         inputNode.connect(dryNode);
+    //         dryNode.connect(mixer);
+    //         wetNode.connect(mixer);
+    //         mixer.connect(outputNode);
+    //         },
+    //     };
+    // }
 
-    // function init() {
-    //     audioCtx = new AudioContext();
-    //     track = new MediaElementAudioSourceNode(audioCtx, {
-    //       mediaElement: audioElement,
-    //     });
-
-    //     // Create the node that controls the volume.
-    //     const gainNode = new GainNode(audioCtx);
-
-    //     const volumeControl = document.querySelector('[data-action="volume"]');
-    //     volumeControl.addEventListener(
-    //       "input",
-    //       () => {
-    //         gainNode.gain.value = volumeControl.value;
-    //       },
-    //       false
-    //     );
-
-    //     // Create the node that controls the panning
-    //     const panner = new StereoPannerNode(audioCtx, { pan: 0 });
-
-    //     const pannerControl = document.querySelector('[data-action="panner"]');
-    //     pannerControl.addEventListener(
-    //       "input",
-    //       () => {
-    //         panner.pan.value = pannerControl.value;
-    //       },
-    //       false
-    //     );
+    
 }
 
 
@@ -536,21 +419,10 @@ function GenerateHomePage(){
     homepage = document.createElement("div");
     homepage.setAttribute("id","home");
     homepage.setAttribute("class","home");
+
     buildRecorder();
-    // title.style.fontSize = "90px";
-    // subtitle.style.fontSize = "40px";
-    // const title = document.createElement("h1");
-    // title.textContent = "Cunnies"
-    // homepage.appendChild(title);
-    // const subtitle = document.createElement("h2");
-    // subtitle.textContent = "-weather for climbers-";
-    // homepage.appendChild(subtitle);
-    // const logo = document.createElement("img");
-    // logo.setAttribute("src","images/web_audio.svg");
-    // logo.setAttribute("alt","crappy logo");
+    
     homepage.appendChild(logo);
-    // const description = document.createElement("p");
-    // description.textContent = "Cunnies.lol is the best way to find cunnies online. (besides maybe almost any other weather app...) We do have a couple cool features though.  Put in your optimal conditions, share your location, and see recomendations for climbing areas near you with the best conditions."
     let masterDiv = document.createElement("div");
     masterDiv.setAttribute("class","master");
     let distortionDiv = document.createElement("div");
@@ -564,8 +436,6 @@ function GenerateHomePage(){
     fileText = document.createElement("p");
     fileText.textContent = "No file selected."
     homepage.appendChild(fileText);
-    // fileButton = document.createElement("button");
-    // fileButton.textContent = "Enter File"
     homepage.appendChild(fileButton);
     masterDiv.appendChild(playButton);
     // homepage.appendChild(stopButton);
@@ -594,7 +464,6 @@ function GenerateHomePage(){
     panFader.max = "1";
     masterDiv.appendChild(panText);
     masterDiv.appendChild(panFader);
-    // homepage.appendChild(masterDiv);
 
     volFader.addEventListener("input",()=>{
         gainNode.gain.value = volFader.value;
@@ -603,28 +472,6 @@ function GenerateHomePage(){
         panNode.pan.value = panFader.value;
     },false);
 
-    // homepage.appendChild(recorder);
-
-
-    
-    // homepage.appendChild(description);
-    // locText = document.createElement("p");
-    // locText.textContent = "Location: Default (Seattle-ish)";
-    // homepage.appendChild(locText);
-    // curLocButton = document.createElement("button");
-    // curLocButton.textContent = "Use Current Location"
-    // homepage.appendChild(curLocButton);
-    // updateLocButton = document.createElement("button");
-    // updateLocButton.textContent = "Set Custom Location"
-    // homepage.appendChild(updateLocButton);
-    // rangeText = document.createElement("p");
-    // rangeText.textContent = `Max travel distance: ${range} miles`;
-    // homepage.appendChild(rangeText);
-    // rangeButton = document.createElement("button");
-    // rangeButton.textContent = "Change Travel Distance";
-    // homepage.appendChild(rangeButton);
-    // homepage.appendChild(space);
-    // homepage.appendChild(localCunniesButton);
     if(gridContainer !== null){
         gridContainer.appendChild(homepage);
         gridContainer.appendChild(masterDiv);
