@@ -40,7 +40,7 @@ h2{
 .container{
     display:grid;
     grid-template-rows: 100px,60px,60px,60px,1fr;
-    grid-template-columns:33%,33%,33% 1fr;
+    grid-template-columns:25%,25%,25%,25%;
     height: 100vh;
     /* column-gap: 2%; */
 }
@@ -55,7 +55,7 @@ h2{
     grid-row: 3,4;
     border: 3px,white;
 }
-.record{
+.recorder{
     grid-column: 2,3;
     grid-row: 3,4;
     border: 3px,white;
