@@ -75,7 +75,7 @@ interface AppModel {
   track: MediaElementAudioSourceNode | null;
   urlArr: string[];
   clipCount: number;
-  stopRecord: boolean;
+  // stopRecord: boolean;
   distAmt: number;
   // reverbNode;
   // delayNode;
@@ -94,7 +94,7 @@ const model: AppModel = {
   track: null,
   urlArr: [],
   clipCount: 0,
-  stopRecord: false,
+  // stopRecord: false,
   distAmt: 400,
   // clips: [],
   // reverbNode: null,
@@ -108,59 +108,78 @@ interface MediaManager {
   stream: MediaStream;
   mediaRecorder: MediaRecorder;
 
-  startRecord: () => void;
-  stopRecord: () => void;
+  isRecording: boolean;
+  startRecording: () => void;
+  stopRecording: () => void;
 }
 
-// foo comments
+function assert(condition: any, msg?: string): asserts condition {
+  if (!condition)
+    throw new Error(msg ?? "Assertion failed (consider adding a helpful msg).");
+}
 
-function initMedia() {
-  //structure for getting user media:
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    console.log("getUserMedia supported.");
-    navigator.mediaDevices
-      .getUserMedia(
-        // constraints - only audio needed for this app
-        {
-          audio: true,
-        }
-      )
+async function initMedia(): Promise<MediaManager> {
+  assert(
+    navigator.mediaDevices && navigator.mediaDevices.getUserMedia,
+    "getUserMedia not supported on your browser!"
+  );
 
-      // Success callback
-      .then(processStream)
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: true,
+  });
 
-      // Error callback
-      .catch((err) => {
-        console.error(`The following getUserMedia error occurred: ${err}`);
-      });
-  } else {
-    console.log("getUserMedia not supported on your browser!");
+  const mediaRecorder = new MediaRecorder(stream);
+
+  const manager: MediaManager = {
+    stream,
+    mediaRecorder,
+    isRecording: false,
+    startRecording,
+    stopRecording,
+  };
+
+  return manager;
+
+  function startRecording() {
+    manager.mediaRecorder.start();
+    manager.isRecording = true;
+  }
+  function stopRecording() {
+    manager.mediaRecorder.stop();
+    manager.isRecording = false;
   }
 }
 
-initMedia();
+const _media = await initMedia();
 
-function processStream(stream: MediaStream) {
+export const _foo = true;
+
+initMediaView(_media);
+
+function initMediaView(manager: MediaManager) {
+  const { mediaRecorder, stream } = manager;
+
   console.log("process stream");
 
-  const mediaRecorder = new MediaRecorder(stream);
-  let chunks: BlobPart[] = [];
+  let chunks: BlobPart[] = []; // TODO(@darzu): move into manager
   mediaRecorder.ondataavailable = (e) => {
     chunks.push(e.data);
     console.log("collecting data");
   };
+
+  // TODO(@darzu): seperate view changes from model changes
   view.recordButton.onclick = () => {
-    if (model.stopRecord) {
-      mediaRecorder.stop();
-      // stopRecordFunc();
-      model.stopRecord = false;
+    if (manager.isRecording) {
+      manager.stopRecording();
+
       view.recordButton.style.background = "white";
       view.recordButton.textContent = "Record";
       view.recordButton.style.color = "red";
     } else {
-      mediaRecorder.start();
       console.log("recorder started");
-      model.stopRecord = true;
+
+      manager.startRecording();
+
       view.recordButton.style.background = "red";
       view.recordButton.style.color = "white";
       view.recordButton.textContent = "Stop";
