@@ -159,8 +159,97 @@ async function initMedia(): Promise<MediaManager> {
   }
 }
 
+interface Clip {
+  name: string;
+  blob: Blob;
+  url: string;
+
+  // TODO(@darzu): REVERSE
+  reverseUrl: string;
+}
+
+let _nextClipId = 1;
+function createClip(manager: MediaManager): Clip {
+  const { _chunks: chunks, mediaRecorder } = manager;
+  // TODO(@darzu):
+
+  const name = `Clip ${_nextClipId}`;
+  _nextClipId += 1;
+
+  const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+  // chunks = [];
+  const url = window.URL.createObjectURL(blob);
+
+  // TODO(@darzu): HACK. remove urlArr ??
+  model.urlArr.push(url);
+
+  // TODO(@darzu): REVERSE hack stuff!
+  let revChunks: BlobPart[] = [];
+  while (chunks.length > 0) revChunks.push(chunks.pop()!);
+  const blobRev = new Blob(revChunks, { type: mediaRecorder.mimeType });
+  const reverseUrl = window.URL.createObjectURL(blobRev);
+  console.log("rev added");
+
+  chunks.length = 0; // TODO(@darzu): deleting chunks!!
+
+  return {
+    name,
+    blob,
+    url,
+
+    reverseUrl,
+  };
+}
+
+function createClipView(clip: Clip) {
+  const clipContainer = document.createElement("article");
+  const clipLabel = document.createElement("p");
+  const audio = document.createElement("audio");
+  const revAudio = document.createElement("audio");
+  const selectButton = document.createElement("button");
+  // const deleteButton = document.createElement("button");
+
+  clipContainer.classList.add("clip");
+  audio.setAttribute("controls", "");
+  selectButton.textContent = "Select Track";
+  // deleteButton.textContent = "Delete";
+  // deleteButton.className = "delete";
+  clipLabel.textContent = clip.name;
+
+  clipContainer.appendChild(audio);
+  clipContainer.appendChild(clipLabel);
+  clipContainer.appendChild(selectButton);
+  // clipContainer.appendChild(deleteButton);
+  view.soundClips.appendChild(clipContainer);
+
+  audio.controls = true;
+
+  audio.src = clip.url;
+
+  revAudio.src = clip.reverseUrl;
+
+  let selectOK = true; // TODO(@darzu): expose this state
+
+  selectButton.onclick = () => {
+    model.revLoc = model.clipCount - 1;
+    if (selectOK) {
+      // TODO(@darzu): deslect doesn't work?
+      selectOK = false;
+      model.audioElement = revAudio;
+      selectButton.textContent = "Deselect Track";
+    } else {
+      selectOK = true;
+      model.audioElement = document.querySelector("audio");
+      selectButton.textContent = "Select Track";
+    }
+
+    // TODO(@darzu): HACK! don't call mainControl again!
+    recreateAudioGraphAndView();
+  };
+}
+
 function initMediaView(manager: MediaManager) {
-  const { mediaRecorder, stream } = manager;
+  const { mediaRecorder } = manager;
 
   console.log("process stream");
 
@@ -183,102 +272,8 @@ function initMediaView(manager: MediaManager) {
     }
   };
 
-  const chunks = manager._chunks;
-
-  interface Clip {
-    name: string;
-    blob: Blob;
-    url: string;
-
-    // TODO(@darzu): REVERSE
-    reverseUrl: string;
-  }
-
-  let _nextClipId = 1;
-  function createClip(chunks: BlobPart[]): Clip {
-    // TODO(@darzu):
-
-    const name = `Clip ${_nextClipId}`;
-    _nextClipId += 1;
-
-    const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
-    // chunks = [];
-    const url = window.URL.createObjectURL(blob);
-
-    // TODO(@darzu): HACK. remove urlArr ??
-    model.urlArr.push(url);
-
-    // TODO(@darzu): REVERSE hack stuff!
-    let revChunks: BlobPart[] = [];
-    while (chunks.length > 0) revChunks.push(chunks.pop()!);
-    const blobRev = new Blob(revChunks, { type: mediaRecorder.mimeType });
-    const reverseUrl = window.URL.createObjectURL(blobRev);
-    console.log("rev added");
-
-    chunks.length = 0; // TODO(@darzu): deleting chunks!!
-
-    return {
-      name,
-      blob,
-      url,
-
-      reverseUrl,
-    };
-  }
-
-  function createClipView(clip: Clip) {
-    const clipContainer = document.createElement("article");
-    const clipLabel = document.createElement("p");
-    const audio = document.createElement("audio");
-    const revAudio = document.createElement("audio");
-    const selectButton = document.createElement("button");
-    // const deleteButton = document.createElement("button");
-
-    clipContainer.classList.add("clip");
-    audio.setAttribute("controls", "");
-    selectButton.textContent = "Select Track";
-    // deleteButton.textContent = "Delete";
-    // deleteButton.className = "delete";
-    clipLabel.textContent = clip.name;
-
-    clipContainer.appendChild(audio);
-    clipContainer.appendChild(clipLabel);
-    clipContainer.appendChild(selectButton);
-    // clipContainer.appendChild(deleteButton);
-    view.soundClips.appendChild(clipContainer);
-
-    audio.controls = true;
-
-    audio.src = clip.url;
-
-    revAudio.src = clip.reverseUrl;
-
-    let selectOK = true; // TODO(@darzu): expose this state
-
-    selectButton.onclick = () => {
-      model.revLoc = model.clipCount - 1;
-      if (selectOK) {
-        // TODO(@darzu): deslect doesn't work?
-        selectOK = false;
-        model.audioElement = revAudio;
-        selectButton.textContent = "Deselect Track";
-      } else {
-        selectOK = true;
-        model.audioElement = document.querySelector("audio");
-        selectButton.textContent = "Select Track";
-      }
-
-      // TODO(@darzu): HACK! don't call mainControl again!
-      recreateAudioGraphAndView();
-    };
-  }
-
   mediaRecorder.onstop = (e) => {
-    // TODO: split out view actions from data changes
-
-    // model.clipCount++;
-    const clip = createClip(chunks);
-
+    const clip = createClip(manager);
     createClipView(clip);
 
     console.log("recorder stopped");
