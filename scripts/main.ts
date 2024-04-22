@@ -108,6 +108,8 @@ interface MediaManager {
   stream: MediaStream;
   mediaRecorder: MediaRecorder;
 
+  _chunks: BlobPart[];
+
   isRecording: boolean;
   startRecording: () => void;
   stopRecording: () => void;
@@ -130,10 +132,20 @@ async function initMedia(): Promise<MediaManager> {
 
   const mediaRecorder = new MediaRecorder(stream);
 
+  let chunks: BlobPart[] = []; // TODO(@darzu): move into manager
+
+  mediaRecorder.ondataavailable = (e) => {
+    chunks.push(e.data);
+    console.log("collecting data");
+  };
+
   const manager: MediaManager = {
     stream,
     mediaRecorder,
     isRecording: false,
+
+    _chunks: chunks,
+
     startRecording,
     stopRecording,
   };
@@ -161,12 +173,6 @@ function initMediaView(manager: MediaManager) {
 
   console.log("process stream");
 
-  let chunks: BlobPart[] = []; // TODO(@darzu): move into manager
-  mediaRecorder.ondataavailable = (e) => {
-    chunks.push(e.data);
-    console.log("collecting data");
-  };
-
   // TODO(@darzu): seperate view changes from model changes
   view.recordButton.onclick = () => {
     if (manager.isRecording) {
@@ -185,11 +191,51 @@ function initMediaView(manager: MediaManager) {
       view.recordButton.textContent = "Stop";
     }
   };
-  mediaRecorder.onstop = (e) => {
-    // TODO: split out view actions from data changes
 
-    model.clipCount++;
-    const clipName = `Clip ${model.clipCount}`;
+  const chunks = manager._chunks;
+
+  interface Clip {
+    name: string;
+    blob: Blob;
+    url: string;
+
+    // TODO(@darzu): REVERSE
+    reverseUrl: string;
+  }
+
+  let _nextClipId = 1;
+  function createClip(chunks: BlobPart[]): Clip {
+    // TODO(@darzu):
+
+    const name = `Clip ${_nextClipId}`;
+    _nextClipId += 1;
+
+    const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+    // chunks = [];
+    const url = window.URL.createObjectURL(blob);
+
+    // TODO(@darzu): HACK. remove urlArr ??
+    model.urlArr.push(url);
+
+    // TODO(@darzu): REVERSE hack stuff!
+    let revChunks: BlobPart[] = [];
+    while (chunks.length > 0) revChunks.push(chunks.pop()!);
+    const blobRev = new Blob(revChunks, { type: mediaRecorder.mimeType });
+    const reverseUrl = window.URL.createObjectURL(blobRev);
+    console.log("rev added");
+
+    chunks.length = 0; // TODO(@darzu): deleting chunks!!
+
+    return {
+      name,
+      blob,
+      url,
+
+      reverseUrl,
+    };
+  }
+
+  function createClipView(clip: Clip) {
     const clipContainer = document.createElement("article");
     const clipLabel = document.createElement("p");
     const audio = document.createElement("audio");
@@ -202,7 +248,7 @@ function initMediaView(manager: MediaManager) {
     selectButton.textContent = "Select Track";
     // deleteButton.textContent = "Delete";
     // deleteButton.className = "delete";
-    clipLabel.textContent = clipName;
+    clipLabel.textContent = clip.name;
 
     clipContainer.appendChild(audio);
     clipContainer.appendChild(clipLabel);
@@ -211,33 +257,17 @@ function initMediaView(manager: MediaManager) {
     view.soundClips.appendChild(clipContainer);
 
     audio.controls = true;
-    const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
-    // chunks = [];
-    const audioURL = window.URL.createObjectURL(blob);
-    audio.src = audioURL;
-    console.log("recorder stopped");
 
-    // model.clips.push(audio);
-    model.urlArr.push(audioURL);
+    audio.src = clip.url;
 
-    // deleteButton.onclick = function (e) {
-    //     e.target.closest(".clip").remove();
-    // };
-    let selectOK = true;
-    const chunksLoc = model.clipCount - 1;
-    let revChunks: BlobPart[] = [];
-    while (chunks.length > 0) revChunks.push(chunks.pop()!);
-    const blobRev = new Blob(revChunks, { type: mediaRecorder.mimeType });
-    chunks = [];
-    const revAudioURL = window.URL.createObjectURL(blobRev);
-    revAudio.src = revAudioURL;
-    console.log("rev added");
+    revAudio.src = clip.reverseUrl;
 
-    // model.clips.push(audio);
-    // revArr.push(revAudio);
+    let selectOK = true; // TODO(@darzu): expose this state
+
     selectButton.onclick = () => {
       model.revLoc = model.clipCount - 1;
       if (selectOK) {
+        // TODO(@darzu): deslect doesn't work?
         selectOK = false;
         model.audioElement = revAudio;
         selectButton.textContent = "Deselect Track";
@@ -246,8 +276,28 @@ function initMediaView(manager: MediaManager) {
         model.audioElement = document.querySelector("audio");
         selectButton.textContent = "Select Track";
       }
+
+      // TODO(@darzu): HACK! don't call mainControl again!
       mainControll();
     };
+  }
+
+  mediaRecorder.onstop = (e) => {
+    // TODO: split out view actions from data changes
+
+    // model.clipCount++;
+    const clip = createClip(chunks);
+
+    createClipView(clip);
+
+    console.log("recorder stopped");
+
+    // deleteButton.onclick = function (e) {
+    //     e.target.closest(".clip").remove();
+    // };
+
+    // model.clips.push(audio);
+    // revArr.push(revAudio);
   };
 }
 
@@ -356,6 +406,7 @@ function mainControll() {
   //takes a url to an audio file and returns a promise to an AudioBuffer;
   function rev(): Promise<AudioBuffer> {
     const ctx = new AudioContext();
+    // TODO(@darzu): read urls?
     return fetch(model.urlArr[model.revLoc])
       .then((data) => data.arrayBuffer())
       .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer))
