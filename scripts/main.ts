@@ -112,6 +112,8 @@ interface MediaManager {
   stopRecord: () => void;
 }
 
+// foo comments
+
 function initMedia() {
   //structure for getting user media:
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
