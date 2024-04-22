@@ -63,26 +63,22 @@ function createView(): AppView {
   return view;
 }
 
-interface AppModel {
+interface AppState {
+  // TODO(@darzu): REMVOE
   revLoc: number;
-  loop: boolean;
-  distortionOn: boolean; // TODO(@darzu): MOVE
-  // gainNode: GainNode | null;
-  // panNode: StereoPannerNode | null;
-  // distortionNode: WaveShaperNode | null;
-  // audioCtx: AudioContext | null;
-  audioElement: HTMLAudioElement | null;
   urlArr: string[];
   clipCount: number;
-  // stopRecord: boolean;
+
+  audioElement: HTMLAudioElement | null;
+
+  // state
+  loop: boolean;
+  distortionOn: boolean; // TODO(@darzu): MOVE
   distAmt: number;
-  // reverbNode;
-  // delayNode;
-  // clips:HTMLAudioElement[];
 }
 
 // TODO(@darzu): move into main
-const model: AppModel = {
+const state: AppState = {
   revLoc: -1,
   loop: false,
   distortionOn: false,
@@ -181,7 +177,7 @@ function createClip(manager: MediaManager): Clip {
   const url = window.URL.createObjectURL(blob);
 
   // TODO(@darzu): HACK. remove urlArr ??
-  model.urlArr.push(url);
+  state.urlArr.push(url);
 
   // TODO(@darzu): REVERSE hack stuff!
   let revChunks: BlobPart[] = [];
@@ -231,15 +227,15 @@ function createClipView(clip: Clip) {
   let selectOK = true; // TODO(@darzu): expose this state
 
   selectButton.onclick = () => {
-    model.revLoc = model.clipCount - 1;
+    state.revLoc = state.clipCount - 1;
     if (selectOK) {
       // TODO(@darzu): deslect doesn't work?
       selectOK = false;
-      model.audioElement = revAudio;
+      state.audioElement = revAudio;
       selectButton.textContent = "Deselect Track";
     } else {
       selectOK = true;
-      model.audioElement = document.querySelector("audio");
+      state.audioElement = document.querySelector("audio");
       selectButton.textContent = "Select Track";
     }
 
@@ -333,7 +329,7 @@ function createAudioGraph(htmlAudio: HTMLAudioElement): AudioGraph {
   const distortion = ctx.createWaveShaper();
   assert(distortion); // TODO(@darzu): unnecessary assert?
 
-  distortion.curve = makeDistortionCurve(model.distAmt);
+  distortion.curve = makeDistortionCurve(state.distAmt);
 
   // reverb not working:
   // reverbNode = createReverb(audioCtx);
@@ -366,12 +362,12 @@ function attachFaderKnobs(graph: AudioGraph) {
 
 let _lastGraph: AudioGraph | undefined;
 function recreateAudioGraphAndView() {
-  assert(model.audioElement);
+  assert(state.audioElement);
 
   if (_lastGraph) _lastGraph.ctx.close();
 
   // TODO(@darzu): don't recreate graph like this?
-  const graph = createAudioGraph(model.audioElement);
+  const graph = createAudioGraph(state.audioElement);
 
   _lastGraph = graph;
 
@@ -382,7 +378,7 @@ function recreateAudioGraphAndView() {
 function attachViewToGraph(graph: AudioGraph) {
   view.reverseButton.onclick = async () => {
     const aBuff = await rev();
-    model.audioElement = await bufferToAudioElement(aBuff);
+    state.audioElement = await bufferToAudioElement(aBuff);
     async function bufferToAudioElement(
       audioBuffer: AudioBuffer
     ): Promise<HTMLAudioElement> {
@@ -422,7 +418,7 @@ function attachViewToGraph(graph: AudioGraph) {
   function rev(): Promise<AudioBuffer> {
     const ctx = new AudioContext();
     // TODO(@darzu): read urls?
-    return fetch(model.urlArr[model.revLoc])
+    return fetch(state.urlArr[state.revLoc])
       .then((data) => data.arrayBuffer())
       .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer))
       .then((revAudioBuffer) => reverseBuff(revAudioBuffer));
@@ -455,7 +451,7 @@ function attachViewToGraph(graph: AudioGraph) {
     let dcInt = 0;
     const dc = prompt("enter dist curve");
     if (dc !== null) dcInt = parseInt(dc);
-    model.distAmt = dcInt;
+    state.distAmt = dcInt;
 
     // TODO(@darzu): refactor distortion state change
     graph.distortion.curve = makeDistortionCurve(dcInt);
@@ -466,17 +462,17 @@ function attachViewToGraph(graph: AudioGraph) {
   };
 
   view.loopButton.onclick = () => {
-    if (model.loop) {
-      model.loop = false;
+    if (state.loop) {
+      state.loop = false;
       view.loopButton.textContent = "Loop";
     } else {
-      model.loop = true;
+      state.loop = true;
       view.loopButton.textContent = "Stop Loop";
     }
   };
 
   view.playButton.onclick = () => {
-    assert(model.audioElement);
+    assert(state.audioElement);
 
     if (graph.ctx.state === "suspended") {
       graph.ctx.resume();
@@ -485,11 +481,9 @@ function attachViewToGraph(graph: AudioGraph) {
       play();
       // else throw "no audioElement";
     } else {
-      if (model.audioElement) {
-        model.audioElement.pause();
-        view.playButton.dataset.play = "false";
-        view.playButton.textContent = "Play";
-      } else throw "no audioElement";
+      state.audioElement.pause();
+      view.playButton.dataset.play = "false";
+      view.playButton.textContent = "Play";
     }
   };
 
@@ -498,39 +492,39 @@ function attachViewToGraph(graph: AudioGraph) {
   function toggleDistortion() {
     assert(graph.distortion && graph.pan && graph.ctx);
 
-    if (model.distortionOn) {
-      model.distortionOn = false;
+    if (state.distortionOn) {
+      state.distortionOn = false;
       graph.distortion.disconnect(graph.ctx.destination);
       graph.pan.disconnect(graph.distortion);
       graph.pan.connect(graph.ctx.destination);
     } else {
-      model.distortionOn = true;
+      state.distortionOn = true;
       graph.pan.disconnect(graph.ctx.destination);
       graph.pan.connect(graph.distortion).connect(graph.ctx.destination);
     }
   }
 
   // handles end of track and looping functionality
-  if (model.audioElement) {
-    model.audioElement.addEventListener(
-      "ended",
-      () => {
-        if (model.loop) play();
-        else {
-          view.playButton.dataset.play = "false";
-          view.playButton.textContent = "Play";
-        }
-      },
-      false
-    );
-  }
+  assert(state.audioElement);
+
+  state.audioElement.addEventListener(
+    "ended",
+    () => {
+      if (state.loop) play();
+      else {
+        view.playButton.dataset.play = "false";
+        view.playButton.textContent = "Play";
+      }
+    },
+    false
+  );
 
   function play() {
-    if (model.audioElement) {
-      model.audioElement.play();
-      view.playButton.dataset.play = "true";
-      view.playButton.textContent = "Pause";
-    }
+    assert(state.audioElement);
+
+    state.audioElement.play();
+    view.playButton.dataset.play = "true";
+    view.playButton.textContent = "Pause";
   }
 
   // reverb not working
