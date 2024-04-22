@@ -1,5 +1,7 @@
 console.clear();
 
+let _lastGraph: AudioGraph | undefined; // TODO(@darzu): remove
+
 interface AppView {
   gridContainer: HTMLElement;
   reverseButton: HTMLButtonElement;
@@ -66,13 +68,12 @@ function createView(): AppView {
 interface AppModel {
   revLoc: number;
   loop: boolean;
-  distortionOn: boolean;
-  gainNode: GainNode | null;
-  panNode: StereoPannerNode | null;
-  distortionNode: WaveShaperNode | null;
-  audioCtx: AudioContext | null;
+  distortionOn: boolean; // TODO(@darzu): MOVE
+  // gainNode: GainNode | null;
+  // panNode: StereoPannerNode | null;
+  // distortionNode: WaveShaperNode | null;
+  // audioCtx: AudioContext | null;
   audioElement: HTMLAudioElement | null;
-  track: MediaElementAudioSourceNode | null;
   urlArr: string[];
   clipCount: number;
   // stopRecord: boolean;
@@ -86,12 +87,11 @@ const model: AppModel = {
   revLoc: -1,
   loop: false,
   distortionOn: false,
-  gainNode: null,
-  panNode: null,
-  distortionNode: null,
-  audioCtx: null,
+  // gainNode: null,
+  // panNode: null,
+  // distortionNode: null,
+  // audioCtx: null,
   audioElement: document.querySelector("audio"),
-  track: null,
   urlArr: [],
   clipCount: 0,
   // stopRecord: false,
@@ -321,51 +321,82 @@ function makeDistortionCurve(amount: number): Float32Array {
 
 mainControll();
 
-function initMainControl() {
-  if (model.audioElement) {
-    let AudioContext = window.AudioContext;
-    if (model.audioCtx) model.audioCtx.close();
-    model.audioCtx = new AudioContext();
-    model.track = model.audioCtx.createMediaElementSource(model.audioElement);
-    model.gainNode = model.audioCtx.createGain();
-    model.panNode = new StereoPannerNode(model.audioCtx);
-    model.distortionNode = model.audioCtx.createWaveShaper();
-    if (model.distortionNode)
-      model.distortionNode.curve = makeDistortionCurve(model.distAmt);
-    setUpFaders();
-    // reverb not working:
-    // reverbNode = createReverb(audioCtx);
+interface AudioGraph {
+  ctx: AudioContext;
 
-    //sets up initial audio graph
-    model.track
-      .connect(model.gainNode)
-      .connect(model.panNode)
-      .connect(model.audioCtx.destination);
-  }
+  gain: GainNode;
+  pan: StereoPannerNode;
+  distortion: WaveShaperNode;
 }
 
-function setUpFaders() {
-  view.volFader.addEventListener(
-    "input",
-    () => {
-      if (model.gainNode)
-        model.gainNode.gain.value = parseFloat(view.volFader.value);
-    },
-    false
-  );
-  view.panFader.addEventListener(
-    "input",
-    () => {
-      if (model.panNode)
-        model.panNode.pan.value = parseFloat(view.panFader.value);
-    },
-    false
-  );
+// TODO(@darzu): allow swapping source nodes
+
+function createAudioGraph(
+  htmlAudio: HTMLAudioElement,
+  old?: AudioGraph
+): AudioGraph {
+  assert(htmlAudio);
+
+  console.log(`creating graph`);
+
+  // TODO(@darzu): does this close all the old nodes???
+  if (old?.ctx) old.ctx.close();
+
+  const ctx = new AudioContext();
+
+  const track = ctx.createMediaElementSource(htmlAudio);
+
+  const gain = ctx.createGain();
+
+  const pan = new StereoPannerNode(ctx);
+
+  const distortion = ctx.createWaveShaper();
+  assert(distortion); // TODO(@darzu): unnecessary assert?
+
+  distortion.curve = makeDistortionCurve(model.distAmt);
+
+  // reverb not working:
+  // reverbNode = createReverb(audioCtx);
+
+  //sets up initial audio graph
+  track.connect(gain).connect(pan).connect(ctx.destination);
+
+  const graph: AudioGraph = {
+    ctx,
+    // track,
+    gain,
+    pan,
+    distortion,
+  };
+
+  attachFaderKnobs(graph);
+
+  return graph;
+}
+
+function attachFaderKnobs(graph: AudioGraph) {
+  // TODO(@darzu): TEST pan and gain work
+  view.volFader.oninput = () => {
+    graph.gain.gain.value = parseFloat(view.volFader.value);
+  };
+  view.panFader.oninput = () => {
+    graph.pan.pan.value = parseFloat(view.panFader.value);
+  };
+}
+
+// TODO(@darzu): don't love this way of init
+function getOrCreateAudioGraph(): AudioGraph {
+  assert(model.audioElement);
+  if (!_lastGraph)
+    _lastGraph = createAudioGraph(model.audioElement, _lastGraph);
+  return _lastGraph;
 }
 
 // TODO(@darzu): remove multiple calls
 function mainControll() {
-  initMainControl();
+  assert(model.audioElement);
+
+  _lastGraph = createAudioGraph(model.audioElement, _lastGraph);
 
   view.reverseButton.onclick = async () => {
     const aBuff = await rev();
@@ -400,7 +431,8 @@ function mainControll() {
       return audioElement;
     }
 
-    initMainControl();
+    // TODO(@darzu): GRAPH recreate seems odd
+    _lastGraph = createAudioGraph(model.audioElement, _lastGraph);
   };
 
   //takes a url to an audio file and returns a promise to an AudioBuffer;
@@ -437,12 +469,15 @@ function mainControll() {
   //file button now allows user to set the amount of distortion
   //this functionality should be moved to a fader in the fx div
   view.distAmtButton.onclick = () => {
+    const graph = getOrCreateAudioGraph();
+
     let dcInt = 0;
     const dc = prompt("enter dist curve");
     if (dc !== null) dcInt = parseInt(dc);
     model.distAmt = dcInt;
-    if (model.distortionNode)
-      model.distortionNode.curve = makeDistortionCurve(dcInt);
+
+    // TODO(@darzu): refactor distortion state change
+    graph.distortion.curve = makeDistortionCurve(dcInt);
 
     // const fileName = prompt("Enter the name of a valid audio file. (eg: test.mp3)")
     // audioFile = "audio-files/"+fileName;
@@ -460,43 +495,43 @@ function mainControll() {
   };
 
   view.playButton.onclick = () => {
-    if (!model.audioCtx) {
-      initMainControl();
+    assert(model.audioElement);
+
+    const graph = getOrCreateAudioGraph();
+
+    if (graph.ctx.state === "suspended") {
+      graph.ctx.resume();
     }
-    if (model.audioCtx) {
-      if (model.audioCtx.state === "suspended") {
-        model.audioCtx.resume();
-      }
-      if (view.playButton.dataset.play === "false") {
-        play();
-        // else throw "no audioElement";
-      } else {
-        if (model.audioElement) {
-          model.audioElement.pause();
-          view.playButton.dataset.play = "false";
-          view.playButton.textContent = "Play";
-        } else throw "no audioElement";
-      }
+    if (view.playButton.dataset.play === "false") {
+      play();
+      // else throw "no audioElement";
+    } else {
+      if (model.audioElement) {
+        model.audioElement.pause();
+        view.playButton.dataset.play = "false";
+        view.playButton.textContent = "Play";
+      } else throw "no audioElement";
     }
   };
 
-  view.distortionButton.onclick = () => {
-    if (!model.audioCtx) initMainControl();
-    if (model.distortionNode && model.panNode && model.audioCtx) {
-      if (model.distortionOn) {
-        model.distortionOn = false;
-        model.distortionNode.disconnect(model.audioCtx.destination);
-        model.panNode.disconnect(model.distortionNode);
-        model.panNode.connect(model.audioCtx.destination);
-      } else {
-        model.distortionOn = true;
-        model.panNode.disconnect(model.audioCtx.destination);
-        model.panNode
-          .connect(model.distortionNode)
-          .connect(model.audioCtx.destination);
-      }
+  view.distortionButton.onclick = toggleDistortion;
+
+  function toggleDistortion() {
+    const graph = getOrCreateAudioGraph(); // TODO(@darzu): this feels unnecessary
+
+    assert(graph.distortion && graph.pan && graph.ctx);
+
+    if (model.distortionOn) {
+      model.distortionOn = false;
+      graph.distortion.disconnect(graph.ctx.destination);
+      graph.pan.disconnect(graph.distortion);
+      graph.pan.connect(graph.ctx.destination);
+    } else {
+      model.distortionOn = true;
+      graph.pan.disconnect(graph.ctx.destination);
+      graph.pan.connect(graph.distortion).connect(graph.ctx.destination);
     }
-  };
+  }
 
   // handles end of track and looping functionality
   if (model.audioElement) {
