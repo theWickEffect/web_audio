@@ -1,6 +1,4 @@
-console.clear();
-
-let _lastGraph: AudioGraph | undefined; // TODO(@darzu): remove
+export const _foo = true;
 
 interface AppView {
   gridContainer: HTMLElement;
@@ -16,7 +14,7 @@ interface AppView {
   recordButton: HTMLButtonElement;
 }
 
-const view = createView();
+const view = createView(); // TODO(@darzu): move into main
 
 function createView(): AppView {
   const reverseButton = document.createElement("button");
@@ -83,6 +81,7 @@ interface AppModel {
   // clips:HTMLAudioElement[];
 }
 
+// TODO(@darzu): move into main
 const model: AppModel = {
   revLoc: -1,
   loop: false,
@@ -100,8 +99,6 @@ const model: AppModel = {
   // reverbNode: null,
   // delayNode: null,
 };
-
-GenerateHomePage();
 
 // TODO(@darzu): fill in
 interface MediaManager {
@@ -161,12 +158,6 @@ async function initMedia(): Promise<MediaManager> {
     manager.isRecording = false;
   }
 }
-
-const _media = await initMedia();
-
-export const _foo = true;
-
-initMediaView(_media);
 
 function initMediaView(manager: MediaManager) {
   const { mediaRecorder, stream } = manager;
@@ -278,7 +269,7 @@ function initMediaView(manager: MediaManager) {
       }
 
       // TODO(@darzu): HACK! don't call mainControl again!
-      mainControll();
+      recreateAudioGraphAndView();
     };
   }
 
@@ -319,8 +310,6 @@ function makeDistortionCurve(amount: number): Float32Array {
 
 // }
 
-mainControll();
-
 interface AudioGraph {
   ctx: AudioContext;
 
@@ -331,16 +320,12 @@ interface AudioGraph {
 
 // TODO(@darzu): allow swapping source nodes
 
-function createAudioGraph(
-  htmlAudio: HTMLAudioElement,
-  old?: AudioGraph
-): AudioGraph {
+function createAudioGraph(htmlAudio: HTMLAudioElement): AudioGraph {
   assert(htmlAudio);
 
   console.log(`creating graph`);
 
   // TODO(@darzu): does this close all the old nodes???
-  if (old?.ctx) old.ctx.close();
 
   const ctx = new AudioContext();
 
@@ -384,20 +369,22 @@ function attachFaderKnobs(graph: AudioGraph) {
   };
 }
 
-// TODO(@darzu): don't love this way of init
-function getOrCreateAudioGraph(): AudioGraph {
+let _lastGraph: AudioGraph | undefined;
+function recreateAudioGraphAndView() {
   assert(model.audioElement);
-  if (!_lastGraph)
-    _lastGraph = createAudioGraph(model.audioElement, _lastGraph);
-  return _lastGraph;
+
+  if (_lastGraph) _lastGraph.ctx.close();
+
+  // TODO(@darzu): don't recreate graph like this?
+  const graph = createAudioGraph(model.audioElement);
+
+  _lastGraph = graph;
+
+  attachViewToGraph(graph);
 }
 
 // TODO(@darzu): remove multiple calls
-function mainControll() {
-  assert(model.audioElement);
-
-  _lastGraph = createAudioGraph(model.audioElement, _lastGraph);
-
+function attachViewToGraph(graph: AudioGraph) {
   view.reverseButton.onclick = async () => {
     const aBuff = await rev();
     model.audioElement = await bufferToAudioElement(aBuff);
@@ -432,7 +419,8 @@ function mainControll() {
     }
 
     // TODO(@darzu): GRAPH recreate seems odd
-    _lastGraph = createAudioGraph(model.audioElement, _lastGraph);
+    // TODO(@darzu): REVERSE
+    // _lastGraph = createAudioGraph(model.audioElement, _lastGraph);
   };
 
   //takes a url to an audio file and returns a promise to an AudioBuffer;
@@ -469,8 +457,6 @@ function mainControll() {
   //file button now allows user to set the amount of distortion
   //this functionality should be moved to a fader in the fx div
   view.distAmtButton.onclick = () => {
-    const graph = getOrCreateAudioGraph();
-
     let dcInt = 0;
     const dc = prompt("enter dist curve");
     if (dc !== null) dcInt = parseInt(dc);
@@ -497,8 +483,6 @@ function mainControll() {
   view.playButton.onclick = () => {
     assert(model.audioElement);
 
-    const graph = getOrCreateAudioGraph();
-
     if (graph.ctx.state === "suspended") {
       graph.ctx.resume();
     }
@@ -517,8 +501,6 @@ function mainControll() {
   view.distortionButton.onclick = toggleDistortion;
 
   function toggleDistortion() {
-    const graph = getOrCreateAudioGraph(); // TODO(@darzu): this feels unnecessary
-
     assert(graph.distortion && graph.pan && graph.ctx);
 
     if (model.distortionOn) {
@@ -661,3 +643,17 @@ function GenerateHomePage() {
     view.gridContainer.appendChild(view.recorder);
   }
 }
+
+async function main() {
+  console.clear();
+
+  GenerateHomePage();
+
+  const _media = await initMedia();
+
+  initMediaView(_media);
+
+  recreateAudioGraphAndView();
+}
+
+main();
