@@ -10,6 +10,7 @@ interface AppView {
   distortionButton: HTMLButtonElement;
   volFader: HTMLInputElement;
   panFader: HTMLInputElement;
+  distortionFader: HTMLInputElement;
   soundClips: HTMLElement;
   recordButton: HTMLButtonElement;
 }
@@ -44,6 +45,13 @@ function createView(): AppView {
   panFader.value = "0";
   panFader.min = "-1";
   panFader.max = "1";
+  const distortionFader = document.createElement("input");
+  distortionFader.type = "range";
+  distortionFader.id = "distortionFader";
+  distortionFader.step = "1";
+  distortionFader.value = "300";
+  distortionFader.min = "0";
+  distortionFader.max = "1000";
   const recordButton = document.createElement("button");
   recordButton.textContent = "Record";
 
@@ -57,6 +65,7 @@ function createView(): AppView {
     distortionButton,
     volFader,
     panFader,
+    distortionFader,
     soundClips: document.createElement("section"),
     recordButton,
   };
@@ -324,7 +333,8 @@ function createAudioGraph(htmlAudio: HTMLAudioElement): AudioGraph {
 
   const gain = ctx.createGain();
 
-  const pan = new StereoPannerNode(ctx);
+  const panNode = ctx.createStereoPanner();
+//   const panNode = new StereoPannerNode(ctx);
 
   const distortion = ctx.createWaveShaper();
   assert(distortion); // TODO(@darzu): unnecessary assert?
@@ -335,13 +345,13 @@ function createAudioGraph(htmlAudio: HTMLAudioElement): AudioGraph {
   // reverbNode = createReverb(audioCtx);
 
   //sets up initial audio graph
-  track.connect(gain).connect(pan).connect(ctx.destination);
+  track.connect(gain).connect(panNode).connect(ctx.destination);
 
   const graph: AudioGraph = {
     ctx,
     // track,
     gain,
-    pan,
+    pan:panNode,
     distortion,
   };
 
@@ -356,7 +366,13 @@ function attachFaderKnobs(graph: AudioGraph) {
     graph.gain.gain.value = parseFloat(view.volFader.value);
   };
   view.panFader.oninput = () => {
-    graph.pan.pan.value = parseFloat(view.panFader.value);
+    const panVal = parseFloat(view.panFader.value);
+    graph.pan.pan.value = panVal;
+    console.log(graph.pan.pan.value);
+  };
+  view.distortionFader.oninput = () => {
+    state.distAmt = parseInt(view.distortionFader.value);
+    graph.distortion.curve = makeDistortionCurve(state.distAmt);
   };
 }
 
@@ -586,21 +602,25 @@ function GenerateHomePage() {
   let masterDiv = document.createElement("div");
   masterDiv.setAttribute("class", "master");
   let fxDiv = document.createElement("div");
-  fxDiv.setAttribute("class", "distortion");
+  fxDiv.setAttribute("class", "fx");
   let masterText = document.createElement("h3");
   masterText.textContent = "Master";
   masterDiv.appendChild(masterText);
-  let distortionText = document.createElement("h3");
-  distortionText.textContent = "FX";
-  fxDiv.appendChild(distortionText);
+  let fxText = document.createElement("h3");
+  fxText.textContent = "FX";
+  const testTXT = document.createElement("p");
+//   testTXT.textContent = "test";
+//   fxDiv.appendChild(testTXT);
   // fileText = document.createElement("p");
   // fileText.textContent = "No file selected."
   // homepage.appendChild(fileText);
-  homepage.appendChild(view.distAmtButton);
+//   homepage.appendChild(view.distAmtButton);
   masterDiv.appendChild(view.playButton);
   // homepage.appendChild(stopButton);
   masterDiv.appendChild(view.loopButton);
+  fxDiv.appendChild(fxText);
   fxDiv.appendChild(view.distortionButton);
+  fxDiv.appendChild(view.distortionFader);
   fxDiv.appendChild(view.reverseButton);
   const volText = document.createElement("h4");
   volText.textContent = "Volume";
